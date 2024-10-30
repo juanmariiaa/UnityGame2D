@@ -12,13 +12,16 @@ public class PlayerController : MonoBehaviour
     public LayerMask groundLayer;
     private bool isTouchingGround;
 
+    private Animator playerAnimation;
+
     // Start is called before the first frame update
     void Start()
     {
         player = GetComponent<Rigidbody2D>();
+        playerAnimation = GetComponent<Animator>();
     }
 
-     // Update is called once per frame
+    // Update is called once per frame 
     void Update()
     {
         isTouchingGround = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
@@ -41,5 +44,8 @@ public class PlayerController : MonoBehaviour
         {
             player.linearVelocity = new Vector2(player.linearVelocity.x, jumpSpeed);
         }
+
+        playerAnimation.SetFloat("Speed", Mathf.Abs(player.linearVelocity.x));
+        playerAnimation.SetBool("OnGround", isTouchingGround);
     }
 }
