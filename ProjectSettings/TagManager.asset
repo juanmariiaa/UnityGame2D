@@ -5,6 +5,11 @@ TagManager:
   serializedVersion: 3
   tags:
   - FallDetector
+  - NextLevel
+  - PreviousLevel
+  - Crystal
+  - Ladder
+  - MovingPlatform
   layers:
   - Default
   - TransparentFX
