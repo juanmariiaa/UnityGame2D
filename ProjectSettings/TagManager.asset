@@ -10,6 +10,8 @@ TagManager:
   - Crystal
   - Ladder
   - MovingPlatform
+  - Spike
+  - End
   layers:
   - Default
   - TransparentFX

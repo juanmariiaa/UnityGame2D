@@ -7,22 +7,23 @@ public class PlayerController : MonoBehaviour
 {
     public float speed = 5f;
     public float jumpSpeed = 8f;
-    public float climbSpeed = 4f; // velocidad para escalar
     private float direction = 0f;
+    private float verticalDirection = 0f; // Para el movimiento en escaleras
     private Rigidbody2D player;
 
     public Transform groundCheck;
     public float groundCheckRadius;
     public LayerMask groundLayer;
     private bool isTouchingGround;
+    private bool isOnLadder = false; // Nuevo estado para saber si está en una escalera
 
     private Animator playerAnimation;
 
     private Vector3 respawnPoint;
     public GameObject fallDetector;
-    public TMP_Text scoreText;
 
-    private bool isOnLadder = false; // si está en la escalera
+    public TMP_Text scoreText;
+    public HealthBar healthBar;
 
     void Start()
     {
@@ -34,25 +35,38 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        // Respawn if health is zero
+        if (Health.totalHealth <= 0f)
+        {
+            Respawn();
+            return;
+        }
+
         isTouchingGround = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
         direction = Input.GetAxis("Horizontal");
+        verticalDirection = Input.GetAxis("Vertical"); // Captura el movimiento vertical
 
+        // Movimiento en escaleras
         if (isOnLadder)
         {
-            // Movimiento vertical en la escalera
-            float vertical = Input.GetAxis("Vertical");
-            player.linearVelocity = new Vector2(direction * speed, vertical * climbSpeed);
-            
-            // Cambia a la animación de escalera solo si se está moviendo arriba o abajo
-            playerAnimation.SetBool("OnLadder", vertical != 0);
+            player.gravityScale = 0; // Desactiva la gravedad mientras esté en la escalera
+            player.linearVelocity = new Vector2(direction * speed, verticalDirection * speed); // Permite movimiento en ambas direcciones
+            playerAnimation.SetBool("OnLadder", true); // Cambia a la animación de escalera
         }
         else
         {
-            // Movimiento horizontal normal
-            if (direction != 0f)
+            player.gravityScale = 1; // Restaura la gravedad
+            playerAnimation.SetBool("OnLadder", false);
+
+            if (direction > 0f)
             {
                 player.linearVelocity = new Vector2(direction * speed, player.linearVelocity.y);
-                transform.localScale = new Vector2(Mathf.Sign(direction) * 0.2469058f, 0.2469058f);
+                transform.localScale = new Vector2(0.2469058f, 0.2469058f);
+            }
+            else if (direction < 0f)
+            {
+                player.linearVelocity = new Vector2(direction * speed, player.linearVelocity.y);
+                transform.localScale = new Vector2(-0.2469058f, 0.2469058f);
             }
             else
             {
@@ -71,11 +85,18 @@ public class PlayerController : MonoBehaviour
         fallDetector.transform.position = new Vector2(transform.position.x, fallDetector.transform.position.y);
     }
 
+    private void Respawn()
+    {
+        transform.position = respawnPoint;
+        Health.totalHealth = 1f;
+        healthBar.SetSize(Health.totalHealth);
+    }
+
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.tag == "FallDetector")
         {
-            transform.position = respawnPoint;
+            Respawn();
         }
         else if (collision.tag == "Checkpoint")
         {
@@ -100,19 +121,27 @@ public class PlayerController : MonoBehaviour
         else if (collision.tag == "Ladder")
         {
             isOnLadder = true;
-            player.gravityScale = 0f; // desactiva la gravedad mientras está en la escalera
+        }
+        else if (collision.tag == "End") // Detecta si el jugador toca el objeto de finalización del juego
+        {
+            SceneManager.LoadScene(0); // Vuelve a la escena inicial
         }
     }
+
 
     private void OnTriggerExit2D(Collider2D collision)
     {
-        if (collision.tag == "Ladder")
+        if (collision.tag == "Ladder") // Detecta si el jugador sale de la escalera
         {
             isOnLadder = false;
-            player.gravityScale = 1f; // restablece la gravedad al salir de la escalera
-            playerAnimation.SetBool("OnLadder", false); // vuelve a la animación normal
         }
     }
 
-    
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        if (collision.tag == "Spike")
+        {
+            healthBar.Damage(0.01f);
+        }
+    }
 }
